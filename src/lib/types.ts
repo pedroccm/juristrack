@@ -16,8 +16,8 @@ export interface Processo {
   cliente: string;
   pasta: string;
   discussao: string;
-  responsavel?: Usuario | null;
-  responsavel_id?: string;
+  responsaveis?: Pick<Usuario, "id" | "nome" | "email" | "role">[];
+  responsavel?: Pick<Usuario, "id" | "nome" | "email" | "role"> | null;
   andamento_atual: string;
   data_andamento: string | null;
   status: "ativo" | "arquivado";
