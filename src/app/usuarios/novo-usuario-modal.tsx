@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { X, Loader2 } from "lucide-react";
 
 interface Props {
@@ -23,13 +22,6 @@ export default function NovoUsuarioModal({ onClose, onSaved }: Props) {
     setLoading(true);
     setError("");
 
-    // Cria o usuário no Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin
-      ? // Se tiver service role, usa admin
-        { data: null, error: new Error("use-api-route") }
-      : { data: null, error: new Error("use-api-route") };
-
-    // Usa API route para criar usuário (precisa de service role key no servidor)
     const res = await fetch("/api/usuarios", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
