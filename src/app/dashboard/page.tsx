@@ -16,15 +16,18 @@ export default function DashboardPage() {
   const [ultimoMonitoramento, setUltimoMonitoramento] = useState<Monitoramento | null>(null);
   const [monitorando, setMonitorando] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error: sessErr }) => {
+      if (sessErr) { setDebugInfo(`getSession error: ${sessErr.message}`); return; }
       if (!session) { router.push("/login"); return; }
+      setDebugInfo(`Session OK: ${session.user.id.slice(0,8)}... Loading data...`);
       setAuthUserId(session.user.id);
       loadData(session.user.id);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.push("/login");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT") router.push("/login");
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -48,9 +51,13 @@ export default function DashboardPage() {
   }, [monitorando, authUserId]);
 
   async function loadData(userId: string) {
-    const { data: userData } = await supabase
+    const { data: userData, error: userErr } = await supabase
       .from("jt_usuarios").select("*").eq("id", userId).single();
-    if (!userData) { router.push("/login"); return; }
+    if (userErr || !userData) {
+      setDebugInfo(`jt_usuarios query failed: ${userErr?.message || "no data"} (userId: ${userId})`);
+      setLoading(false);
+      return;
+    }
     setUser(userData);
 
     let query = supabase
@@ -87,8 +94,20 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+        {debugInfo && <p className="text-xs text-gray-500 max-w-md text-center font-mono">{debugInfo}</p>}
+      </div>
+    );
+  }
+
+  if (!user && debugInfo) {
+    return (
+      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3">
+        <div className="bg-red-50 border border-red-200 rounded p-4 max-w-md">
+          <p className="text-red-600 text-sm font-medium">Erro ao carregar dados</p>
+          <p className="text-red-500 text-xs mt-1 font-mono">{debugInfo}</p>
+        </div>
       </div>
     );
   }

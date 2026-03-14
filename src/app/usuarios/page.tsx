@@ -20,8 +20,8 @@ export default function UsuariosPage() {
       if (!session) { router.push("/login"); return; }
       loadData(session.user.id);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) router.push("/login");
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") router.push("/login");
     });
     return () => subscription.unsubscribe();
   }, []);
