@@ -16,7 +16,8 @@ export interface Processo {
   cliente: string;
   pasta: string;
   discussao: string;
-  responsaveis?: Usuario[];  // múltiplos responsáveis
+  responsavel?: Usuario | null;
+  responsavel_id?: string;
   andamento_atual: string;
   data_andamento: string | null;
   status: "ativo" | "arquivado";
