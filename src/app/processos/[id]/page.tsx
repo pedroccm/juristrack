@@ -19,7 +19,8 @@ export default function ProcessoDetalhe() {
   useEffect(() => { loadData(); }, [id]);
 
   async function loadData() {
-    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const authUser = session?.user ?? null;
     if (!authUser) { router.push("/login"); return; }
 
     const { data: userData } = await supabase
