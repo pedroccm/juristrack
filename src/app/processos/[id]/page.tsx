@@ -27,24 +27,16 @@ export default function ProcessoDetalhe() {
     return () => subscription.unsubscribe();
   }, [id]);
 
-  async function loadData(token: string, userId: string) {
+  async function loadData(token: string, _userId: string) {
     const res = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
     if (!res.ok) { router.push("/login"); return; }
     const userData = await res.json();
     setUser(userData);
 
-    const { data: proc } = await supabase
-      .from("jt_processos")
-      .select("*")
-      .eq("id", id)
-      .single();
-    setProcesso(proc);
-
-    const { data: ands } = await supabase
-      .from("jt_andamentos")
-      .select("*")
-      .eq("processo_id", id)
-      .order("data_andamento", { ascending: false });
+    const procRes = await fetch(`/api/processos/${id}`);
+    if (!procRes.ok) { router.push("/processos"); return; }
+    const { processo, andamentos: ands } = await procRes.json();
+    setProcesso(processo);
     setAndamentos(ands || []);
     setLoading(false);
   }

@@ -32,12 +32,8 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!monitorando || !authUserId) return;
     const interval = setInterval(async () => {
-      const { data } = await supabase
-        .from("jt_monitoramentos")
-        .select("*")
-        .order("iniciado_em", { ascending: false })
-        .limit(1)
-        .single();
+      const monitRes = await fetch("/api/monitoramentos");
+      const data = await monitRes.json();
       if (data?.status === "concluido" || data?.status === "erro") {
         setMonitorando(false);
         setUltimoMonitoramento(data);
@@ -54,22 +50,15 @@ export default function DashboardPage() {
     const userData = await res.json();
     setUser(userData);
 
-    let query = supabase
-      .from("jt_processos")
-      .select("*")
-      .eq("status", "ativo")
-      .order("updated_at", { ascending: false });
-    if (userData.role === "advogado") query = query.eq("responsavel_id", userId);
+    const procUrl = userData.role === "advogado"
+      ? `/api/processos?responsavel_id=${userId}`
+      : "/api/processos";
+    const procRes = await fetch(procUrl);
+    const processosData = await procRes.json();
+    setProcessos(Array.isArray(processosData) ? processosData : []);
 
-    const { data: processosData } = await query;
-    setProcessos(processosData || []);
-
-    const { data: monit } = await supabase
-      .from("jt_monitoramentos")
-      .select("*")
-      .order("iniciado_em", { ascending: false })
-      .limit(1)
-      .single();
+    const monitRes = await fetch("/api/monitoramentos");
+    const monit = await monitRes.json();
     setUltimoMonitoramento(monit);
     setLoading(false);
   }

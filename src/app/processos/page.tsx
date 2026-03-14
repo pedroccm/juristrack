@@ -37,15 +37,12 @@ export default function ProcessosPage() {
     const userData = await res.json();
     setUser(userData);
 
-    let query = supabase
-      .from("jt_processos")
-      .select("*")
-      .eq("status", "ativo")
-      .order("updated_at", { ascending: false });
-    if (userData.role === "advogado") query = query.eq("responsavel_id", userId);
-
-    const { data } = await query;
-    setProcessos(data || []);
+    const procUrl = userData.role === "advogado"
+      ? `/api/processos?responsavel_id=${userId}`
+      : "/api/processos";
+    const procRes = await fetch(procUrl);
+    const data = await procRes.json();
+    setProcessos(Array.isArray(data) ? data : []);
     setLoading(false);
   }
 
