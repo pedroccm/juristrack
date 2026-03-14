@@ -16,7 +16,11 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) { router.push("/login"); return; }
+      loadData(session.user.id);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Polling: enquanto monitorando, verifica status a cada 3s
@@ -38,15 +42,11 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [monitorando]);
 
-  async function loadData() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const authUser = session?.user ?? null;
-    if (!authUser) { router.push("/login"); return; }
-
+  async function loadData(userId: string) {
     const { data: userData } = await supabase
       .from("jt_usuarios")
       .select("*")
-      .eq("id", authUser.id)
+      .eq("id", userId)
       .single();
 
     if (!userData) { router.push("/login"); return; }

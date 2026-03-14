@@ -16,15 +16,17 @@ export default function ProcessoDetalhe() {
   const [andamentos, setAndamentos] = useState<Andamento[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { loadData(); }, [id]);
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) { router.push("/login"); return; }
+      loadData(session.user.id);
+    });
+    return () => subscription.unsubscribe();
+  }, [id]);
 
-  async function loadData() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const authUser = session?.user ?? null;
-    if (!authUser) { router.push("/login"); return; }
-
+  async function loadData(userId: string) {
     const { data: userData } = await supabase
-      .from("jt_usuarios").select("*").eq("id", authUser.id).single();
+      .from("jt_usuarios").select("*").eq("id", userId).single();
     if (!userData) { router.push("/login"); return; }
     setUser(userData);
 

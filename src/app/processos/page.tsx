@@ -20,15 +20,17 @@ export default function ProcessosPage() {
   const [tribunal, setTribunal] = useState("");
   const [modalAberto, setModalAberto] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) { router.push("/login"); return; }
+      loadData(session.user.id);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
-  async function loadData() {
-    const { data: { session } } = await supabase.auth.getSession();
-    const authUser = session?.user ?? null;
-    if (!authUser) { router.push("/login"); return; }
-
+  async function loadData(userId: string) {
     const { data: userData } = await supabase
-      .from("jt_usuarios").select("*").eq("id", authUser.id).single();
+      .from("jt_usuarios").select("*").eq("id", userId).single();
     if (!userData) { router.push("/login"); return; }
     setUser(userData);
 
@@ -39,7 +41,7 @@ export default function ProcessosPage() {
       .order("updated_at", { ascending: false });
 
     if (userData.role === "advogado") {
-      query = query.eq("responsavel_id", authUser.id);
+      query = query.eq("responsavel_id", userId);
     }
 
     const { data } = await query;
