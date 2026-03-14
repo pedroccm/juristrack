@@ -16,17 +16,14 @@ export default function DashboardPage() {
   const [ultimoMonitoramento, setUltimoMonitoramento] = useState<Monitoramento | null>(null);
   const [monitorando, setMonitorando] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState("");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session }, error: sessErr }) => {
-      if (sessErr) { setDebugInfo(`getSession error: ${sessErr.message}`); return; }
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push("/login"); return; }
-      setDebugInfo(`Session OK: ${session.user.id.slice(0,8)}... Loading data...`);
       setAuthUserId(session.user.id);
-      loadData(session.user.id);
+      loadData(session.access_token, session.user.id);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") router.push("/login");
     });
     return () => subscription.unsubscribe();
@@ -44,25 +41,22 @@ export default function DashboardPage() {
       if (data?.status === "concluido" || data?.status === "erro") {
         setMonitorando(false);
         setUltimoMonitoramento(data);
-        loadData(authUserId);
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) loadData(session.access_token, session.user.id);
       }
     }, 3000);
     return () => clearInterval(interval);
   }, [monitorando, authUserId]);
 
-  async function loadData(userId: string) {
-    const { data: userData, error: userErr } = await supabase
-      .from("jt_usuarios").select("*").eq("id", userId).single();
-    if (userErr || !userData) {
-      setDebugInfo(`jt_usuarios query failed: ${userErr?.message || "no data"} (userId: ${userId})`);
-      setLoading(false);
-      return;
-    }
+  async function loadData(token: string, userId: string) {
+    const res = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { router.push("/login"); return; }
+    const userData = await res.json();
     setUser(userData);
 
     let query = supabase
       .from("jt_processos")
-      .select("*, responsavel:jt_usuarios(id, nome, email, role, ativo, created_at)")
+      .select("*")
       .eq("status", "ativo")
       .order("updated_at", { ascending: false });
     if (userData.role === "advogado") query = query.eq("responsavel_id", userId);
@@ -94,20 +88,8 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3">
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
         <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-        {debugInfo && <p className="text-xs text-gray-500 max-w-md text-center font-mono">{debugInfo}</p>}
-      </div>
-    );
-  }
-
-  if (!user && debugInfo) {
-    return (
-      <div className="min-h-screen bg-[#F8F9FA] flex flex-col items-center justify-center gap-3">
-        <div className="bg-red-50 border border-red-200 rounded p-4 max-w-md">
-          <p className="text-red-600 text-sm font-medium">Erro ao carregar dados</p>
-          <p className="text-red-500 text-xs mt-1 font-mono">{debugInfo}</p>
-        </div>
       </div>
     );
   }

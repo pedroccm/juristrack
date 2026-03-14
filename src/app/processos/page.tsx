@@ -23,7 +23,7 @@ export default function ProcessosPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push("/login"); return; }
-      loadData(session.user.id);
+      loadData(session.access_token, session.user.id);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") router.push("/login");
@@ -31,15 +31,15 @@ export default function ProcessosPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function loadData(userId: string) {
-    const { data: userData } = await supabase
-      .from("jt_usuarios").select("*").eq("id", userId).single();
-    if (!userData) { router.push("/login"); return; }
+  async function loadData(token: string, userId: string) {
+    const res = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { router.push("/login"); return; }
+    const userData = await res.json();
     setUser(userData);
 
     let query = supabase
       .from("jt_processos")
-      .select("*, responsavel:jt_usuarios(id, nome, email, role, ativo, created_at)")
+      .select("*")
       .eq("status", "ativo")
       .order("updated_at", { ascending: false });
     if (userData.role === "advogado") query = query.eq("responsavel_id", userId);
@@ -216,7 +216,7 @@ export default function ProcessosPage() {
           onSaved={async () => {
             setModalAberto(false);
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) loadData(session.user.id);
+            if (session) loadData(session.access_token, session.user.id);
           }}
         />
       )}

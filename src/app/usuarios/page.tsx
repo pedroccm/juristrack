@@ -18,7 +18,7 @@ export default function UsuariosPage() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push("/login"); return; }
-      loadData(session.user.id);
+      loadData(session.access_token);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") router.push("/login");
@@ -26,22 +26,27 @@ export default function UsuariosPage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function loadData(userId: string) {
-    const { data: userData } = await supabase
-      .from("jt_usuarios").select("*").eq("id", userId).single();
-    if (!userData || userData.role !== "admin") { router.push("/dashboard"); return; }
+  async function loadData(token: string) {
+    const meRes = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
+    if (!meRes.ok) { router.push("/login"); return; }
+    const userData = await meRes.json();
+    if (userData.role !== "admin") { router.push("/dashboard"); return; }
     setUser(userData);
 
-    const { data } = await supabase
-      .from("jt_usuarios").select("*").order("nome");
-    setUsuarios(data || []);
+    const usersRes = await fetch("/api/usuarios");
+    const users = await usersRes.json();
+    setUsuarios(Array.isArray(users) ? users : []);
     setLoading(false);
   }
 
   async function toggleAtivo(u: Usuario) {
-    await supabase.from("jt_usuarios").update({ ativo: !u.ativo }).eq("id", u.id);
+    await fetch("/api/usuarios", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: u.id, ativo: !u.ativo }),
+    });
     const { data: { session } } = await supabase.auth.getSession();
-    if (session) loadData(session.user.id);
+    if (session) loadData(session.access_token);
   }
 
   if (loading) {
@@ -136,7 +141,7 @@ export default function UsuariosPage() {
           onSaved={async () => {
             setModalAberto(false);
             const { data: { session } } = await supabase.auth.getSession();
-            if (session) loadData(session.user.id);
+            if (session) loadData(session.access_token);
           }}
         />
       )}

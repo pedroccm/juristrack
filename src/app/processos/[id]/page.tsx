@@ -19,7 +19,7 @@ export default function ProcessoDetalhe() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push("/login"); return; }
-      loadData(session.user.id);
+      loadData(session.access_token, session.user.id);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") router.push("/login");
@@ -27,15 +27,15 @@ export default function ProcessoDetalhe() {
     return () => subscription.unsubscribe();
   }, [id]);
 
-  async function loadData(userId: string) {
-    const { data: userData } = await supabase
-      .from("jt_usuarios").select("*").eq("id", userId).single();
-    if (!userData) { router.push("/login"); return; }
+  async function loadData(token: string, userId: string) {
+    const res = await fetch("/api/me", { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) { router.push("/login"); return; }
+    const userData = await res.json();
     setUser(userData);
 
     const { data: proc } = await supabase
       .from("jt_processos")
-      .select("*, responsavel:jt_usuarios(id, nome, email, role, ativo, created_at)")
+      .select("*")
       .eq("id", id)
       .single();
     setProcesso(proc);

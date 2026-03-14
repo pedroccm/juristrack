@@ -6,6 +6,18 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// List all usuarios (bypasses RLS)
+export async function GET() {
+  const { data, error } = await supabaseAdmin
+    .from("jt_usuarios")
+    .select("*")
+    .order("nome");
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json(data);
+}
+
+// Create new usuario
 export async function POST(req: NextRequest) {
   const { nome, email, senha, role } = await req.json();
 
@@ -25,4 +37,17 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, user: data.user });
+}
+
+// Toggle ativo status
+export async function PATCH(req: NextRequest) {
+  const { id, ativo } = await req.json();
+
+  const { error } = await supabaseAdmin
+    .from("jt_usuarios")
+    .update({ ativo })
+    .eq("id", id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ ok: true });
 }
