@@ -15,14 +15,14 @@
     "@supabase/supabase-js": "latest",
     "@supabase/ssr": "latest",
     "lucide-react": "latest",
-    "clsx": "latest"
+    "clsx": "latest",
+    "@tailwindcss/postcss": "latest",
+    "tailwindcss": "latest"
   },
   "devDependencies": {
     "typescript": "latest",
     "@types/node": "latest",
     "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@tailwindcss/postcss": "latest",
-    "tailwindcss": "latest"
+    "@types/react-dom": "latest"
   }
 }
