@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Header from "@/components/layout/header";
-import { Plus, Search, Loader2, ChevronRight } from "lucide-react";
+import { Plus, Search, Loader2, ChevronRight, Filter } from "lucide-react";
 import type { Processo, Usuario } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -14,10 +14,12 @@ const TRIBUNAIS = ["TJSP","TJRJ","TJSC","TJRN","TJPE","TJBA","TJCE","TJES","TJPB
 export default function ProcessosPage() {
   const router = useRouter();
   const [user, setUser] = useState<Usuario | null>(null);
-  const [processos, setProcessos] = useState<Processo[]>([]);
+  const [todosProcessos, setTodosProcessos] = useState<Processo[]>([]);
+  const [advogados, setAdvogados] = useState<Pick<Usuario, "id" | "nome">[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState("");
   const [tribunal, setTribunal] = useState("");
+  const [responsavelFiltro, setResponsavelFiltro] = useState<string>("meus");
   const [modalAberto, setModalAberto] = useState(false);
 
   useEffect(() => {
@@ -37,23 +39,42 @@ export default function ProcessosPage() {
     const userData = await res.json();
     setUser(userData);
 
-    const procUrl = userData.role === "advogado"
-      ? `/api/processos?responsavel_id=${userId}`
-      : "/api/processos";
-    const procRes = await fetch(procUrl);
+    // Always fetch ALL processos (admin sees all, advogado too but defaults to "meus")
+    const procRes = await fetch("/api/processos");
     const data = await procRes.json();
-    setProcessos(Array.isArray(data) ? data : []);
+    setTodosProcessos(Array.isArray(data) ? data : []);
+
+    // Get list of advogados for filter dropdown
+    if (userData.role === "admin") {
+      const usersRes = await fetch("/api/usuarios");
+      const users = await usersRes.json();
+      if (Array.isArray(users)) {
+        setAdvogados(users.filter((u: Usuario) => u.ativo).map((u: Usuario) => ({ id: u.id, nome: u.nome })));
+      }
+    }
+
+    // Default filter: advogado sees "meus", admin sees "todos"
+    setResponsavelFiltro(userData.role === "admin" ? "todos" : "meus");
     setLoading(false);
   }
 
-  const filtrados = processos.filter((p) => {
+  const filtrados = todosProcessos.filter((p) => {
     const termo = busca.toLowerCase();
     const matchBusca = !busca ||
       p.cliente.toLowerCase().includes(termo) ||
       p.numero_cnj.includes(termo) ||
-      p.pasta?.toLowerCase().includes(termo);
+      p.pasta?.toLowerCase().includes(termo) ||
+      p.responsavel?.nome?.toLowerCase().includes(termo);
     const matchTribunal = !tribunal || p.tribunal === tribunal;
-    return matchBusca && matchTribunal;
+
+    let matchResponsavel = true;
+    if (responsavelFiltro === "meus" && user) {
+      matchResponsavel = (p.responsaveis || []).some((r) => r.id === user.id);
+    } else if (responsavelFiltro !== "todos" && responsavelFiltro !== "meus") {
+      matchResponsavel = (p.responsaveis || []).some((r) => r.id === responsavelFiltro);
+    }
+
+    return matchBusca && matchTribunal && matchResponsavel;
   });
 
   if (loading) {
@@ -64,6 +85,8 @@ export default function ProcessosPage() {
     );
   }
 
+  const meusCount = user ? todosProcessos.filter((p) => (p.responsaveis || []).some((r) => r.id === user.id)).length : 0;
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA]">
       <Header role={user!.role} nome={user!.nome} />
@@ -72,7 +95,7 @@ export default function ProcessosPage() {
         {/* Left pane — filters + list */}
         <aside className="w-72 bg-white border-r border-[#E5E7EB] flex flex-col overflow-hidden flex-shrink-0">
           <div className="px-4 py-3 border-b border-[#E5E7EB] flex items-center justify-between">
-            <span className="font-serif font-semibold text-sm text-gray-900">Processos ativos</span>
+            <span className="font-serif font-semibold text-sm text-gray-900">Processos</span>
             {user!.role === "admin" && (
               <button
                 onClick={() => setModalAberto(true)}
@@ -84,14 +107,14 @@ export default function ProcessosPage() {
             )}
           </div>
 
-          {/* Search */}
+          {/* Filters */}
           <div className="px-3 py-2.5 border-b border-[#E5E7EB] space-y-2">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
               <input
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar..."
+                placeholder="Buscar cliente, CNJ, pasta..."
                 className="w-full pl-8 pr-3 py-1.5 bg-[#F8F9FA] border border-[#E5E7EB] rounded text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-400 focus:border-blue-400"
               />
             </div>
@@ -102,6 +125,17 @@ export default function ProcessosPage() {
             >
               <option value="">Todos os tribunais</option>
               {TRIBUNAIS.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <select
+              value={responsavelFiltro}
+              onChange={(e) => setResponsavelFiltro(e.target.value)}
+              className="w-full px-2.5 py-1.5 bg-[#F8F9FA] border border-[#E5E7EB] rounded text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="meus">Meus processos ({meusCount})</option>
+              <option value="todos">Todos ({todosProcessos.length})</option>
+              {user!.role === "admin" && advogados.map((a) => (
+                <option key={a.id} value={a.id}>{a.nome}</option>
+              ))}
             </select>
           </div>
 
@@ -125,8 +159,11 @@ export default function ProcessosPage() {
                       {p.tribunal}
                     </span>
                   </div>
+                  {p.responsavel && (
+                    <p className="text-[11px] text-blue-500 mt-1">{(p.responsaveis || []).map((r) => r.nome).join(", ")}</p>
+                  )}
                   {p.andamento_atual && (
-                    <p className="text-[11px] text-gray-400 mt-1.5 line-clamp-2">{p.andamento_atual}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5 line-clamp-1">{p.andamento_atual}</p>
                   )}
                 </Link>
               ))
@@ -140,9 +177,22 @@ export default function ProcessosPage() {
 
         {/* Center — table */}
         <main className="flex-1 overflow-y-auto p-8">
-          <div className="mb-6">
-            <h1 className="font-serif text-2xl font-semibold text-gray-900 tracking-tight">Processos</h1>
-            <p className="text-gray-500 text-sm mt-0.5">{filtrados.length} processos ativos</p>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="font-serif text-2xl font-semibold text-gray-900 tracking-tight">Processos</h1>
+              <p className="text-gray-500 text-sm mt-0.5">
+                {responsavelFiltro === "meus" ? "Meus processos" : responsavelFiltro === "todos" ? "Todos os processos" : `Processos de ${advogados.find((a) => a.id === responsavelFiltro)?.nome || ""}`}
+                {" — "}{filtrados.length} ativo{filtrados.length !== 1 ? "s" : ""}
+              </p>
+            </div>
+            {responsavelFiltro !== "todos" && (
+              <button
+                onClick={() => setResponsavelFiltro("todos")}
+                className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 border border-[#E5E7EB] rounded-full px-3 py-1.5 hover:bg-gray-50 transition"
+              >
+                <Filter className="w-3 h-3" /> Ver todos
+              </button>
+            )}
           </div>
 
           <div className="bg-white border border-[#E5E7EB] rounded shadow-sm overflow-hidden">
@@ -152,9 +202,7 @@ export default function ProcessosPage() {
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente / Pasta</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Número</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Tribunal</th>
-                  {user!.role === "admin" && (
-                    <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável</th>
-                  )}
+                  <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Responsável</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Último andamento</th>
                   <th className="px-5 py-3"></th>
                 </tr>
@@ -174,11 +222,23 @@ export default function ProcessosPage() {
                         {p.tribunal}
                       </span>
                     </td>
-                    {user!.role === "admin" && (
-                      <td className="px-5 py-3.5">
-                        <span className="text-sm text-gray-600">{p.responsavel?.nome || "—"}</span>
-                      </td>
-                    )}
+                    <td className="px-5 py-3.5">
+                      <div className="flex flex-wrap gap-1">
+                        {(p.responsaveis || []).length > 0 ? (
+                          (p.responsaveis || []).map((r) => (
+                            <span
+                              key={r.id}
+                              onClick={() => setResponsavelFiltro(r.id)}
+                              className="text-xs text-gray-600 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded-full cursor-pointer hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition-colors"
+                            >
+                              {r.nome}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-5 py-3.5 max-w-xs">
                       <p className="text-sm text-gray-600 truncate">{p.andamento_atual || "—"}</p>
                       {p.data_andamento && (
