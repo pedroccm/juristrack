@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<Usuario | null>(null);
+  const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [ultimoMonitoramento, setUltimoMonitoramento] = useState<Monitoramento | null>(null);
   const [monitorando, setMonitorando] = useState(false);
@@ -18,6 +19,7 @@ export default function DashboardPage() {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) { router.push("/login"); return; }
+      setAuthUserId(session.user.id);
       loadData(session.user.id);
     });
     return () => subscription.unsubscribe();
@@ -25,7 +27,7 @@ export default function DashboardPage() {
 
   // Polling: enquanto monitorando, verifica status a cada 3s
   useEffect(() => {
-    if (!monitorando) return;
+    if (!monitorando || !authUserId) return;
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from("jt_monitoramentos")
@@ -36,11 +38,11 @@ export default function DashboardPage() {
       if (data?.status === "concluido" || data?.status === "erro") {
         setMonitorando(false);
         setUltimoMonitoramento(data);
-        loadData();
+        loadData(authUserId);
       }
     }, 3000);
     return () => clearInterval(interval);
-  }, [monitorando]);
+  }, [monitorando, authUserId]);
 
   async function loadData(userId: string) {
     const { data: userData } = await supabase
@@ -60,7 +62,7 @@ export default function DashboardPage() {
       .order("updated_at", { ascending: false });
 
     if (userData.role === "advogado") {
-      query = query.eq("responsavel_id", authUser.id);
+      query = query.eq("responsavel_id", userId);
     }
 
     const { data: processosData } = await query;

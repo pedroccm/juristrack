@@ -173,7 +173,7 @@ export default function ProcessosPage() {
       {modalAberto && (
         <NovoProcessoModal
           onClose={() => setModalAberto(false)}
-          onSaved={() => { setModalAberto(false); loadData(); }}
+          onSaved={async () => { setModalAberto(false); const { data: { session } } = await supabase.auth.getSession(); if (session) loadData(session.user.id); }}
         />
       )}
     </div>

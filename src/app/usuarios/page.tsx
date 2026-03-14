@@ -38,7 +38,8 @@ export default function UsuariosPage() {
 
   async function toggleAtivo(u: Usuario) {
     await supabase.from("jt_usuarios").update({ ativo: !u.ativo }).eq("id", u.id);
-    loadData();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) loadData(session.user.id);
   }
 
   if (loading) {
@@ -128,7 +129,7 @@ export default function UsuariosPage() {
       {modalAberto && (
         <NovoUsuarioModal
           onClose={() => setModalAberto(false)}
-          onSaved={() => { setModalAberto(false); loadData(); }}
+          onSaved={async () => { setModalAberto(false); const { data: { session } } = await supabase.auth.getSession(); if (session) loadData(session.user.id); }}
         />
       )}
     </div>
