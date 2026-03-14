@@ -1,0 +1,15 @@
+Oi! Fiz uma comparação entre a planilha que vocês fizeram hoje manualmente e a versão gerada automaticamente pelo sistema. Seguem os resultados:
+
+De 230 processos analisados:
+
+- 48 processos: o sistema acertou exatamente o mesmo andamento que vocês registraram manualmente ✅
+
+- 61 processos: o sistema trouxe um andamento mais recente do que o que estava registrado na planilha de ontem — ou seja, o sistema capturou movimentações que ainda não tinham sido vistas
+
+- 108 processos: vocês registraram um andamento mais recente do que o sistema trouxe — isso acontece porque o DataJud (base do CNJ que consultamos) tem um atraso de alguns dias para indexar as movimentações dos tribunais. Então quando vocês entram direto no site do TJSP ou TRF3, por exemplo, vocês veem o andamento na hora, mas o DataJud ainda não atualizou
+
+- 2 processos: vocês adicionaram hoje que ainda não estavam no sistema
+
+Resumindo: o sistema já funciona bem para boa parte dos processos e economiza bastante tempo. O ponto de melhoria é justamente esse atraso do DataJud — a solução é fazer a consulta direto nos sites dos tribunais para os casos onde o DataJud estiver desatualizado, que é o que estamos desenvolvendo na próxima fase.
+
+Qualquer dúvida é só falar!
