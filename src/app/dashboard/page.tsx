@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import Sidebar from "@/components/layout/sidebar";
-import { FileText, AlertCircle, CheckCircle, Play, Loader2, Clock } from "lucide-react";
+import Header from "@/components/layout/header";
+import { FileText, AlertCircle, CheckCircle, Play, Loader2, Clock, ChevronRight } from "lucide-react";
 import type { Processo, Monitoramento, Usuario } from "@/lib/types";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,15 +18,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push("/login"); return; }
       setAuthUserId(session.user.id);
       loadData(session.user.id);
     });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) router.push("/login");
+    });
     return () => subscription.unsubscribe();
   }, []);
 
-  // Polling: enquanto monitorando, verifica status a cada 3s
   useEffect(() => {
     if (!monitorando || !authUserId) return;
     const interval = setInterval(async () => {
@@ -46,36 +49,26 @@ export default function DashboardPage() {
 
   async function loadData(userId: string) {
     const { data: userData } = await supabase
-      .from("jt_usuarios")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
+      .from("jt_usuarios").select("*").eq("id", userId).single();
     if (!userData) { router.push("/login"); return; }
     setUser(userData);
 
-    // Carrega processos (admin vê todos, advogado vê só os seus)
     let query = supabase
       .from("jt_processos")
       .select("*, responsavel:jt_usuarios(id, nome, email, role, ativo, created_at)")
       .eq("status", "ativo")
       .order("updated_at", { ascending: false });
-
-    if (userData.role === "advogado") {
-      query = query.eq("responsavel_id", userId);
-    }
+    if (userData.role === "advogado") query = query.eq("responsavel_id", userId);
 
     const { data: processosData } = await query;
     setProcessos(processosData || []);
 
-    // Último monitoramento
     const { data: monit } = await supabase
       .from("jt_monitoramentos")
       .select("*")
       .order("iniciado_em", { ascending: false })
       .limit(1)
       .single();
-
     setUltimoMonitoramento(monit);
     setLoading(false);
   }
@@ -83,9 +76,7 @@ export default function DashboardPage() {
   async function rodarMonitoramento() {
     const res = await fetch("/api/monitorar", { method: "POST" });
     const data = await res.json();
-    if (data.ok) {
-      setMonitorando(true); // polling começa aqui, para quando N8N finalizar
-    }
+    if (data.ok) setMonitorando(true);
   }
 
   const mudancasHoje = processos.filter((p) => {
@@ -96,85 +87,95 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      <Sidebar role={user!.role} nome={user!.nome} />
+    <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA]">
+      <Header role={user!.role} nome={user!.nome} />
 
-      <main className="flex-1 p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-            <p className="text-slate-400 mt-1">Bom dia, {user!.nome.split(" ")[0]}</p>
-          </div>
-
-          {user!.role === "admin" && (
-            <button
-              onClick={rodarMonitoramento}
-              disabled={monitorando}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold px-5 py-2.5 rounded-xl transition-colors"
-            >
-              {monitorando ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Monitorando...</>
-              ) : (
-                <><Play className="w-4 h-4" /> Rodar monitoramento</>
-              )}
-            </button>
-          )}
-        </div>
-
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <StatCard
-            icon={<FileText className="w-5 h-5 text-blue-400" />}
-            label="Processos ativos"
-            value={processos.length}
-            bg="bg-blue-500/10"
-          />
-          <StatCard
-            icon={<AlertCircle className="w-5 h-5 text-amber-400" />}
-            label="Com andamento recente"
-            value={mudancasHoje.length}
-            bg="bg-amber-500/10"
-          />
-          <StatCard
-            icon={<CheckCircle className="w-5 h-5 text-green-400" />}
-            label="Último monitoramento"
-            value={ultimoMonitoramento
-              ? new Date(ultimoMonitoramento.iniciado_em).toLocaleDateString("pt-BR")
-              : "—"}
-            bg="bg-green-500/10"
-          />
-        </div>
-
-        {/* Processos com andamento recente */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-white font-semibold">Andamentos recentes</h2>
-            {mudancasHoje.length > 0 && (
-              <span className="bg-amber-500/20 text-amber-400 text-xs font-semibold px-2.5 py-1 rounded-full">
-                {mudancasHoje.length} novos
-              </span>
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-5xl mx-auto">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="font-serif text-2xl font-semibold text-gray-900 tracking-tight">Dashboard</h1>
+              <p className="text-gray-500 text-sm mt-0.5">Bom dia, {user!.nome.split(" ")[0]}</p>
+            </div>
+            {user!.role === "admin" && (
+              <button
+                onClick={rodarMonitoramento}
+                disabled={monitorando}
+                className="inline-flex items-center gap-2 bg-gray-900 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-medium px-4 py-2 rounded-full transition"
+              >
+                {monitorando
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Monitorando...</>
+                  : <><Play className="w-3.5 h-3.5" /> Rodar monitoramento</>}
+              </button>
             )}
           </div>
 
-          {mudancasHoje.length === 0 ? (
-            <div className="px-6 py-12 text-center text-slate-500">
-              Nenhum andamento recente detectado.
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <StatCard icon={<FileText className="w-4 h-4 text-blue-500" />} label="Processos ativos" value={processos.length} bg="bg-blue-50" />
+            <StatCard icon={<AlertCircle className="w-4 h-4 text-amber-500" />} label="Com andamento recente" value={mudancasHoje.length} bg="bg-amber-50" />
+            <StatCard
+              icon={<CheckCircle className="w-4 h-4 text-green-500" />}
+              label="Último monitoramento"
+              value={ultimoMonitoramento ? new Date(ultimoMonitoramento.iniciado_em).toLocaleDateString("pt-BR") : "—"}
+              bg="bg-green-50"
+            />
+          </div>
+
+          {/* Recent */}
+          <div className="bg-white border border-[#E5E7EB] rounded shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-[#E5E7EB] flex items-center justify-between">
+              <span className="font-serif font-semibold text-gray-900">Andamentos recentes</span>
+              {mudancasHoje.length > 0 && (
+                <span className="bg-amber-50 text-amber-700 text-xs font-medium px-2.5 py-0.5 rounded-full border border-amber-200">
+                  {mudancasHoje.length} novos
+                </span>
+              )}
             </div>
-          ) : (
-            <div className="divide-y divide-slate-800">
-              {mudancasHoje.map((p) => (
-                <ProcessoRow key={p.id} processo={p} showResponsavel={user!.role === "admin"} />
-              ))}
-            </div>
-          )}
+            {mudancasHoje.length === 0 ? (
+              <div className="px-5 py-12 text-center text-gray-400 text-sm">
+                Nenhum andamento recente detectado.
+              </div>
+            ) : (
+              <div className="divide-y divide-[#E5E7EB]">
+                {mudancasHoje.map((p) => (
+                  <Link
+                    key={p.id}
+                    href={`/processos/${p.id}`}
+                    className="px-5 py-4 flex items-start gap-4 hover:bg-[#F8F9FA] transition-colors group"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-blue-50 text-blue-700 text-xs font-mono px-1.5 py-0.5 rounded border border-blue-100">
+                          {p.tribunal}
+                        </span>
+                        {user!.role === "admin" && p.responsavel && (
+                          <span className="text-gray-400 text-xs">{p.responsavel.nome}</span>
+                        )}
+                      </div>
+                      <p className="text-gray-900 text-sm font-medium truncate">{p.cliente}</p>
+                      <p className="text-gray-500 text-xs mt-0.5 line-clamp-2">{p.andamento_atual}</p>
+                    </div>
+                    <div className="flex-shrink-0 text-right">
+                      <div className="flex items-center gap-1 text-gray-400 text-xs">
+                        <Clock className="w-3 h-3" />
+                        {p.data_andamento ? new Date(p.data_andamento).toLocaleDateString("pt-BR") : "—"}
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 mt-1 ml-auto transition-colors" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
@@ -188,40 +189,10 @@ function StatCard({ icon, label, value, bg }: {
   bg: string;
 }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-      <div className={`inline-flex p-2.5 rounded-xl ${bg} mb-4`}>{icon}</div>
-      <div className="text-2xl font-bold text-white">{value}</div>
-      <div className="text-slate-400 text-sm mt-1">{label}</div>
-    </div>
-  );
-}
-
-function ProcessoRow({ processo, showResponsavel }: { processo: Processo; showResponsavel: boolean }) {
-  return (
-    <div className="px-6 py-4 hover:bg-slate-800/50 transition-colors">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="bg-blue-500/20 text-blue-400 text-xs font-mono px-2 py-0.5 rounded">
-              {processo.tribunal}
-            </span>
-            {showResponsavel && processo.responsavel && (
-              <span className="text-slate-500 text-xs">{processo.responsavel.nome}</span>
-            )}
-          </div>
-          <p className="text-white text-sm font-medium truncate">{processo.cliente}</p>
-          <p className="text-slate-400 text-sm mt-0.5 line-clamp-2">{processo.andamento_atual}</p>
-        </div>
-        <div className="text-right flex-shrink-0">
-          <div className="flex items-center gap-1 text-slate-500 text-xs">
-            <Clock className="w-3 h-3" />
-            {processo.data_andamento
-              ? new Date(processo.data_andamento).toLocaleDateString("pt-BR")
-              : "—"}
-          </div>
-          <p className="text-slate-600 text-xs mt-1 font-mono">{processo.numero_cnj.slice(0, 20)}...</p>
-        </div>
-      </div>
+    <div className="bg-white border border-[#E5E7EB] rounded shadow-sm p-5">
+      <div className={`inline-flex p-2 rounded ${bg} mb-3`}>{icon}</div>
+      <div className="text-2xl font-bold text-gray-900 font-serif tracking-tight">{value}</div>
+      <div className="text-gray-500 text-xs mt-0.5">{label}</div>
     </div>
   );
 }

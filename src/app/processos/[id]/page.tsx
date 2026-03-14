@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import Sidebar from "@/components/layout/sidebar";
-import { ArrowLeft, Loader2, Clock, ExternalLink } from "lucide-react";
+import Header from "@/components/layout/header";
+import { ArrowLeft, Loader2, Clock } from "lucide-react";
 import type { Processo, Andamento, Usuario } from "@/lib/types";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -17,9 +17,12 @@ export default function ProcessoDetalhe() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) { router.push("/login"); return; }
       loadData(session.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) router.push("/login");
     });
     return () => subscription.unsubscribe();
   }, [id]);
@@ -35,7 +38,6 @@ export default function ProcessoDetalhe() {
       .select("*, responsavel:jt_usuarios(id, nome, email, role, ativo, created_at)")
       .eq("id", id)
       .single();
-
     setProcesso(proc);
 
     const { data: ands } = await supabase
@@ -43,15 +45,14 @@ export default function ProcessoDetalhe() {
       .select("*")
       .eq("processo_id", id)
       .order("data_andamento", { ascending: false });
-
     setAndamentos(ands || []);
     setLoading(false);
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+      <div className="min-h-screen bg-[#F8F9FA] flex items-center justify-center">
+        <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
       </div>
     );
   }
@@ -59,94 +60,99 @@ export default function ProcessoDetalhe() {
   if (!processo) return null;
 
   return (
-    <div className="flex min-h-screen bg-slate-950">
-      <Sidebar role={user!.role} nome={user!.nome} />
+    <div className="flex flex-col h-screen overflow-hidden bg-[#F8F9FA]">
+      <Header role={user!.role} nome={user!.nome} />
 
-      <main className="flex-1 p-8 max-w-4xl">
-        <Link href="/processos" className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors mb-6 text-sm">
-          <ArrowLeft className="w-4 h-4" /> Voltar para processos
-        </Link>
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-4xl mx-auto">
+          <Link
+            href="/processos"
+            className="inline-flex items-center gap-1.5 text-gray-400 hover:text-gray-700 transition-colors text-xs mb-6"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" /> Voltar para processos
+          </Link>
 
-        {/* Header do processo */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-white">{processo.cliente}</h1>
-              {processo.pasta && (
-                <span className="text-slate-500 text-sm">{processo.pasta}</span>
+          {/* Header do processo */}
+          <div className="bg-white border border-[#E5E7EB] rounded shadow-sm p-6 mb-5">
+            <div className="flex items-start justify-between gap-4 mb-5">
+              <div>
+                <h1 className="font-serif text-xl font-semibold text-gray-900 tracking-tight">{processo.cliente}</h1>
+                {processo.pasta && (
+                  <span className="text-gray-400 text-sm mt-0.5 block">{processo.pasta}</span>
+                )}
+              </div>
+              <span className="bg-blue-50 text-blue-700 text-xs font-semibold px-2.5 py-1 rounded border border-blue-100 flex-shrink-0">
+                {processo.tribunal}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-5 text-sm">
+              <div>
+                <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Número CNJ</span>
+                <p className="text-gray-800 font-mono text-sm mt-1">{processo.numero_cnj}</p>
+              </div>
+              <div>
+                <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Responsável</span>
+                <p className="text-gray-800 text-sm mt-1">{processo.responsavel?.nome || "—"}</p>
+              </div>
+              {processo.discussao && (
+                <div className="col-span-2">
+                  <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">Discussão</span>
+                  <p className="text-gray-600 text-sm mt-1">{processo.discussao}</p>
+                </div>
               )}
             </div>
-            <span className="bg-blue-500/20 text-blue-400 text-sm font-semibold px-3 py-1 rounded-lg flex-shrink-0">
-              {processo.tribunal}
-            </span>
+
+            {/* Andamento atual */}
+            <div className="mt-5 p-4 bg-[#F8F9FA] rounded border border-[#E5E7EB]">
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-2 h-2 bg-green-400 rounded-full flex-shrink-0"></div>
+                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Andamento atual</span>
+                {processo.data_andamento && (
+                  <span className="text-gray-400 text-xs ml-auto">
+                    {new Date(processo.data_andamento).toLocaleDateString("pt-BR")}
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-800 text-sm">{processo.andamento_atual || "Sem andamento registrado"}</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <span className="text-slate-500">Número CNJ</span>
-              <p className="text-slate-200 font-mono mt-0.5">{processo.numero_cnj}</p>
+          {/* Histórico */}
+          <div className="bg-white border border-[#E5E7EB] rounded shadow-sm overflow-hidden">
+            <div className="px-5 py-3.5 border-b border-[#E5E7EB]">
+              <h2 className="font-serif font-semibold text-gray-900">Histórico de andamentos</h2>
             </div>
-            <div>
-              <span className="text-slate-500">Responsável</span>
-              <p className="text-slate-200 mt-0.5">{processo.responsavel?.nome || "—"}</p>
-            </div>
-            {processo.discussao && (
-              <div className="col-span-2">
-                <span className="text-slate-500">Discussão</span>
-                <p className="text-slate-300 mt-0.5">{processo.discussao}</p>
+
+            {andamentos.length === 0 ? (
+              <div className="px-5 py-12 text-center text-gray-400 text-sm">
+                Nenhum andamento registrado ainda.
+              </div>
+            ) : (
+              <div className="divide-y divide-[#E5E7EB]">
+                {andamentos.map((a, i) => (
+                  <div key={a.id} className="px-5 py-4 flex gap-4">
+                    <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-1">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${i === 0 ? "bg-blue-400" : "bg-gray-300"}`} />
+                      {i < andamentos.length - 1 && <div className="w-px flex-1 bg-[#E5E7EB] min-h-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0 pb-1">
+                      <p className="text-gray-800 text-sm">{a.descricao}</p>
+                      <div className="flex items-center gap-2 mt-1.5">
+                        <Clock className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-400 text-xs">
+                          {new Date(a.data_andamento).toLocaleDateString("pt-BR")}
+                        </span>
+                        <span className="text-gray-300 text-xs">
+                          · detectado em {new Date(a.detectado_em).toLocaleDateString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-
-          {/* Andamento atual */}
-          <div className="mt-4 p-4 bg-slate-800 rounded-xl border border-slate-700">
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-slate-400 text-xs font-medium uppercase tracking-wider">Andamento atual</span>
-              {processo.data_andamento && (
-                <span className="text-slate-500 text-xs ml-auto">
-                  {new Date(processo.data_andamento).toLocaleDateString("pt-BR")}
-                </span>
-              )}
-            </div>
-            <p className="text-white text-sm">{processo.andamento_atual || "Sem andamento registrado"}</p>
-          </div>
-        </div>
-
-        {/* Histórico */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-800">
-            <h2 className="text-white font-semibold">Histórico de andamentos</h2>
-          </div>
-
-          {andamentos.length === 0 ? (
-            <div className="px-6 py-12 text-center text-slate-500 text-sm">
-              Nenhum andamento registrado ainda.
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-800">
-              {andamentos.map((a, i) => (
-                <div key={a.id} className="px-6 py-4 flex gap-4">
-                  <div className="flex flex-col items-center gap-1 flex-shrink-0 pt-0.5">
-                    <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${i === 0 ? "bg-blue-400" : "bg-slate-600"}`} />
-                    {i < andamentos.length - 1 && <div className="w-px flex-1 bg-slate-800 min-h-4" />}
-                  </div>
-                  <div className="flex-1 min-w-0 pb-2">
-                    <p className="text-slate-200 text-sm">{a.descricao}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Clock className="w-3 h-3 text-slate-500" />
-                      <span className="text-slate-500 text-xs">
-                        {new Date(a.data_andamento).toLocaleDateString("pt-BR")}
-                      </span>
-                      <span className="text-slate-600 text-xs">
-                        · detectado em {new Date(a.detectado_em).toLocaleDateString("pt-BR")}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </main>
     </div>

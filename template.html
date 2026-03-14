@@ -1,0 +1,707 @@
+<html lang="en" vid="0"><head vid="1">
+    <meta charset="UTF-8" vid="2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" vid="3">
+    <title vid="4">Lexia - AI Legal Operating System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" vid="5">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" vid="6">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:ital,wght@0,600;0,700;1,600&amp;display=swap" rel="stylesheet" vid="7">
+    <style vid="8">
+        :root {
+            
+            --bg-canvas: #F8F9FA; 
+            --bg-surface: #FFFFFF;
+            --text-primary: #111827; 
+            --text-secondary: #6B7280;
+            --text-muted: #9CA3AF;
+            --border-color: #E5E7EB; 
+            
+            
+            --accent-blue: #3B82F6; 
+            --accent-blue-light: #EFF6FF;
+            --accent-green: #10B981; 
+            --accent-green-light: #D1FAE5;
+            --accent-red: #F43F5E; 
+            
+            
+            --font-serif: 'Playfair Display', serif;
+            --font-sans: 'Inter', sans-serif;
+            
+            
+            --radius-card: 4px; 
+            --radius-pill: 9999px; 
+            
+            
+            --shadow-subtle: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 13px; 
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        
+        .font-serif { font-family: var(--font-serif); }
+        .text-xs { font-size: 11px; }
+        .text-sm { font-size: 12px; }
+        .text-base { font-size: 13px; }
+        .text-lg { font-size: 16px; }
+        .text-xl { font-size: 20px; }
+        .text-2xl { font-size: 24px; }
+        .text-muted { color: var(--text-muted); }
+        .font-medium { font-weight: 500; }
+        .font-semibold { font-weight: 600; }
+        .tracking-tight { letter-spacing: -0.025em; }
+
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 12px;
+            border-radius: var(--radius-pill);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            gap: 6px;
+        }
+        .btn-outline {
+            background: transparent;
+            border-color: var(--border-color);
+            color: var(--text-primary);
+        }
+        .btn-outline:hover {
+            background: var(--bg-canvas);
+        }
+        .btn-primary {
+            background: var(--text-primary);
+            color: white;
+        }
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+        }
+        .btn-ghost:hover {
+            background: var(--border-color);
+            color: var(--text-primary);
+        }
+        .btn-icon {
+            padding: 6px;
+            border-radius: 4px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: var(--radius-pill);
+            font-size: 11px;
+            font-weight: 500;
+        }
+        .badge-green { background: var(--accent-green-light); color: #065F46; }
+        .badge-blue { background: var(--accent-blue-light); color: #1E40AF; }
+        .badge-outline { border: 1px solid var(--border-color); background: transparent; }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-subtle);
+        }
+        .card-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-content {
+            padding: 16px;
+        }
+
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+
+        
+        
+        
+        .os-header {
+            height: 48px;
+            background: var(--bg-surface);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .logo-mark {
+            width: 20px;
+            height: 20px;
+            background: var(--text-primary);
+            border-radius: 4px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-family: var(--font-serif);
+        }
+
+        .os-nav {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .nav-item {
+            padding: 4px 12px;
+            border-radius: var(--radius-pill);
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+        .nav-item:hover {
+            background: var(--bg-canvas);
+            color: var(--text-primary);
+        }
+        .nav-item.active {
+            background: var(--accent-blue-light);
+            color: var(--accent-blue);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        
+        .search-container {
+            position: relative;
+            width: 240px;
+        }
+        .search-input {
+            width: 100%;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-pill);
+            padding: 6px 12px 6px 32px;
+            font-size: 12px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--accent-blue);
+            background: var(--bg-surface);
+        }
+        .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            color: var(--text-muted);
+        }
+
+        
+        .os-workspace {
+            display: grid;
+            grid-template-columns: 280px 1fr 320px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        
+        .pane-left {
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .pane-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .list-container {
+            flex: 1;
+            overflow-y: auto;
+        }
+        .list-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .list-item:hover { background: var(--bg-canvas); }
+        .list-item.active { background: #F8FAFC; border-left: 3px solid var(--accent-blue); padding-left: 13px; }
+        
+        .list-item-top { display: flex; justify-content: space-between; align-items: flex-start; }
+        .case-title { font-weight: 500; color: var(--text-primary); margin-bottom: 2px; }
+        .case-meta { color: var(--text-secondary); font-size: 11px; display: flex; gap: 8px; align-items: center; }
+        
+        
+        .pane-center {
+            background: var(--bg-canvas);
+            overflow-y: auto;
+            padding: 32px 48px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .canvas-header {
+            margin-bottom: 16px;
+        }
+        
+        .page-title {
+            font-size: 32px;
+            color: var(--text-primary);
+            line-height: 1.1;
+            margin-bottom: 8px;
+        }
+        .canvas-meta {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            color: var(--text-secondary);
+        }
+
+        
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+        .col-span-2 { grid-column: span 2; }
+
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .data-table th, .data-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .data-table th {
+            color: var(--text-secondary);
+            font-weight: 500;
+            background: #F8FAFC;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+
+        
+        .file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-card);
+            gap: 12px;
+            background: var(--bg-surface);
+            transition: border-color 0.2s;
+        }
+        .file-item:hover { border-color: var(--text-muted); cursor: pointer; }
+        .file-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 4px;
+            background: var(--bg-canvas);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-blue);
+        }
+        .file-details { flex: 1; }
+        .file-name { font-weight: 500; margin-bottom: 2px; }
+
+        
+        .ai-block {
+            background: linear-gradient(to bottom right, #FFFFFF, #F8FAFC);
+            border: 1px solid #E2E8F0;
+            border-left: 3px solid #8B5CF6; 
+        }
+        .ai-text {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #374151;
+        }
+
+        
+        .pane-right {
+            background: var(--bg-surface);
+            border-left: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-container {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .message {
+            max-width: 85%;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .message.system {
+            align-self: flex-start;
+        }
+        .message-bubble {
+            padding: 10px 14px;
+            border-radius: 8px;
+            border-bottom-left-radius: 2px;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+        }
+        .message.user {
+            align-self: flex-end;
+        }
+        .message.user .message-bubble {
+            background: var(--text-primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-input-area {
+            padding: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .chat-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            background: var(--bg-canvas);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+        }
+        .chat-input-wrapper:focus-within {
+            border-color: var(--accent-blue);
+            background: var(--bg-surface);
+        }
+        .chat-textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            resize: none;
+            padding: 4px;
+            font-family: var(--font-sans);
+            font-size: 13px;
+            outline: none;
+            min-height: 24px;
+            max-height: 120px;
+        }
+        
+        
+        .icon { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    </style>
+</head>
+<body vid="9">
+
+    
+    <header class="os-header" vid="10">
+        <div class="logo-area" vid="11">
+            <div class="logo-mark" vid="12">L</div>
+            <span class="font-serif font-semibold text-base tracking-tight" vid="13">Lexia OS</span>
+        </div>
+
+        <nav class="os-nav" vid="14">
+            <a href="#" class="nav-item" vid="15">Dashboard</a>
+            <a href="#" class="nav-item active" vid="16">Cases</a>
+            <a href="#" class="nav-item" vid="17">Documents</a>
+            <a href="#" class="nav-item" vid="18">Research</a>
+            <a href="#" class="nav-item" vid="19">Clients</a>
+        </nav>
+
+        <div class="header-actions" vid="20">
+            <div class="search-container" vid="21">
+                <svg class="search-icon icon" viewBox="0 0 24 24" vid="22"><circle cx="11" cy="11" r="8" vid="23"></circle><line x1="21" y1="21" x2="16.65" y2="16.65" vid="24"></line></svg>
+                <input type="text" class="search-input" placeholder="Search cases, documents, citations..." vid="25">
+            </div>
+            <button class="btn btn-ghost btn-icon" vid="26">
+                <svg class="icon" viewBox="0 0 24 24" vid="27"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" vid="28"></path><path d="M13.73 21a2 2 0 0 1-3.46 0" vid="29"></path></svg>
+            </button>
+            <div style="width: 24px; height: 24px; border-radius: 50%; background: var(--accent-blue); color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold;" vid="30">AJ</div>
+        </div>
+    </header>
+
+    
+    <main class="os-workspace" vid="31">
+        
+        
+        <aside class="pane-left" vid="32">
+            <div class="pane-header" vid="33">
+                <span class="font-semibold" vid="34">Active Matters</span>
+                <button class="btn btn-ghost btn-icon" style="padding: 2px;" vid="35">
+                    <svg class="icon" viewBox="0 0 24 24" vid="36"><line x1="12" y1="5" x2="12" y2="19" vid="37"></line><line x1="5" y1="12" x2="19" y2="12" vid="38"></line></svg>
+                </button>
+            </div>
+            <div class="pane-header" style="padding: 8px 16px; background: #F8FAFC;" vid="39">
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;" vid="40">
+                    <span class="badge badge-outline" style="background: white;" vid="41">All</span>
+                    <span class="badge badge-outline" vid="42">Litigation</span>
+                    <span class="badge badge-outline" vid="43">Corporate</span>
+                </div>
+            </div>
+            
+            <div class="list-container" vid="44">
+                
+                <div class="list-item active" vid="45">
+                    <div class="list-item-top" vid="46">
+                        <span class="case-title" vid="47">Estate of Harrison v. Sterling</span>
+                        <span class="badge badge-blue" vid="48">Active</span>
+                    </div>
+                    <div class="case-meta" vid="49">
+                        <span vid="50">#CV-23-0912</span> • <span vid="51">Trial Prep</span>
+                    </div>
+                    <div class="text-xs text-muted" style="margin-top: 4px;" vid="52">Last updated 2h ago by E. Reed</div>
+                </div>
+
+                <div class="list-item" vid="53">
+                    <div class="list-item-top" vid="54">
+                        <span class="case-title" vid="55">TechNova M&amp;A Integration</span>
+                        <span class="badge badge-green" vid="56">Review</span>
+                    </div>
+                    <div class="case-meta" vid="57">
+                        <span vid="58">#CO-24-0045</span> • <span vid="59">Due Diligence</span>
+                    </div>
+                </div>
+
+                <div class="list-item" vid="60">
+                    <div class="list-item-top" vid="61">
+                        <span class="case-title" vid="62">Martinez v. BuildCorp</span>
+                        <span class="badge badge-outline" vid="63">Discovery</span>
+                    </div>
+                    <div class="case-meta" vid="64">
+                        <span vid="65">#CV-23-1108</span> • <span vid="66">Deposition Phase</span>
+                    </div>
+                </div>
+                
+                <div class="list-item" vid="67">
+                    <div class="list-item-top" vid="68">
+                        <span class="case-title" vid="69">Pinnacle Group IP Structuring</span>
+                        <span class="badge badge-outline" vid="70">Drafting</span>
+                    </div>
+                    <div class="case-meta" vid="71">
+                        <span vid="72">#IP-24-0012</span> • <span vid="73">Patent Filing</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        
+        <section class="pane-center" vid="74">
+            
+            <header class="canvas-header" vid="75">
+                <div class="canvas-meta" style="margin-bottom: 12px;" vid="76">
+                    <span class="badge badge-blue" vid="77">Litigation</span>
+                    <span vid="78">Client: Sterling Enterprises</span>
+                    <span vid="79">Lead: A. Jenkins</span>
+                </div>
+                
+                <h1 class="font-serif page-title tracking-tight" vid="80">Estate of Harrison v. Sterling</h1>
+                <div style="display: flex; gap: 8px; margin-top: 16px;" vid="81">
+                    <button class="btn btn-outline" vid="82">Generate Summary</button>
+                    <button class="btn btn-outline" vid="83">View Timeline</button>
+                    <button class="btn btn-primary" style="margin-left: auto;" vid="84">New Document</button>
+                </div>
+            </header>
+
+            <div class="canvas-grid" vid="85">
+                
+                
+                <div class="card ai-block col-span-2" vid="86">
+                    <div class="card-header" style="border-bottom: none; padding-bottom: 8px;" vid="87">
+                        <div style="display: flex; align-items: center; gap: 8px;" vid="88">
+                            <svg class="icon" style="color: #8B5CF6;" viewBox="0 0 24 24" vid="89"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" vid="90"></path></svg>
+                            <span class="font-semibold font-serif text-lg" vid="91">AI Case Briefing</span>
+                        </div>
+                    </div>
+                    <div class="card-content" style="padding-top: 0;" vid="92">
+                        <p class="ai-text" vid="93">
+                            Plaintiff alleges breach of fiduciary duty regarding the valuation of commercial real estate holdings within the Harrison trust prior to dissolution. Key contention centers on the retroactive appraisal dated Oct 14, 2022. <strong vid="94">Immediate action required:</strong> Review the deposition transcript of the primary appraiser (J. Vance) for inconsistencies highlighted in the recent discovery batch.
+                        </p>
+                    </div>
+                </div>
+
+                
+                <div class="card" vid="95">
+                    <div class="card-header" vid="96">
+                        <span class="font-serif font-semibold text-lg" vid="97">Key Documents</span>
+                        <button class="btn btn-ghost btn-icon" vid="98"><svg class="icon" viewBox="0 0 24 24" vid="99"><circle cx="12" cy="12" r="10" vid="100"></circle><line x1="12" y1="8" x2="12" y2="16" vid="101"></line><line x1="8" y1="12" x2="16" y2="12" vid="102"></line></svg></button>
+                    </div>
+                    <div class="card-content file-list" vid="103">
+                        <div class="file-item" vid="104">
+                            <div class="file-icon" vid="105"><svg class="icon" viewBox="0 0 24 24" vid="106"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" vid="107"></path><polyline points="14 2 14 8 20 8" vid="108"></polyline><line x1="16" y1="13" x2="8" y2="13" vid="109"></line><line x1="16" y1="17" x2="8" y2="17" vid="110"></line><polyline points="10 9 9 9 8 9" vid="111"></polyline></svg></div>
+                            <div class="file-details" vid="112">
+                                <div class="file-name" vid="113">Original Trust Agreement.pdf</div>
+                                <div class="text-xs text-muted" vid="114">2.4 MB • Oct 2018</div>
+                            </div>
+                        </div>
+                        <div class="file-item" vid="115">
+                            <div class="file-icon" style="color: var(--accent-red);" vid="116"><svg class="icon" viewBox="0 0 24 24" vid="117"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" vid="118"></path><polyline points="14 2 14 8 20 8" vid="119"></polyline><circle cx="10" cy="13" r="2" vid="120"></circle><path d="M14 13h4" vid="121"></path><path d="M10 17h8" vid="122"></path></svg></div>
+                            <div class="file-details" vid="123">
+                                <div class="file-name" vid="124">Vance Deposition_Draft.docx</div>
+                                <div class="text-xs text-muted" vid="125">AI Analysed • 14 pages</div>
+                            </div>
+                        </div>
+                        <div class="file-item" vid="126">
+                            <div class="file-icon" style="color: var(--accent-green);" vid="127"><svg class="icon" viewBox="0 0 24 24" vid="128"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" vid="129"></path><polyline points="14 2 14 8 20 8" vid="130"></polyline><path d="M12 18v-6" vid="131"></path><path d="M9 15l3 3 3-3" vid="132"></path></svg></div>
+                            <div class="file-details" vid="133">
+                                <div class="file-name" vid="134">Motion to Dismiss_V2.pdf</div>
+                                <div class="text-xs text-muted" vid="135">Pending Review • 1.1 MB</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div class="card" vid="136">
+                    <div class="card-header" vid="137">
+                        <span class="font-serif font-semibold text-lg" vid="138">Timeline &amp; Deadlines</span>
+                    </div>
+                    <table class="data-table" vid="139">
+                        <thead vid="140">
+                            <tr vid="141">
+                                <th vid="142">Event / Task</th>
+                                <th vid="143">Date</th>
+                                <th vid="144">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody vid="145">
+                            <tr vid="146">
+                                <td vid="147">Submit Interrogatories</td>
+                                <td vid="148">Oct 12</td>
+                                <td vid="149"><span class="badge badge-green" vid="150">Done</span></td>
+                            </tr>
+                            <tr vid="151">
+                                <td vid="152">Vance Deposition Review</td>
+                                <td vid="153">Nov 04</td>
+                                <td vid="154"><span class="badge badge-outline" vid="155">In Progress</span></td>
+                            </tr>
+                            <tr vid="156">
+                                <td vid="157">Motion for Summary Judgement</td>
+                                <td vid="158">Nov 15</td>
+                                <td vid="159"><span class="text-muted" vid="160">Drafting</span></td>
+                            </tr>
+                            <tr vid="161">
+                                <td vid="162">Pre-trial Conference</td>
+                                <td vid="163">Dec 02</td>
+                                <td vid="164"><span class="text-muted" vid="165">Scheduled</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        
+        <aside class="pane-right" vid="166">
+            <div class="pane-header" style="background: var(--bg-canvas);" vid="167">
+                <div style="display: flex; align-items: center; gap: 8px;" vid="168">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #8B5CF6;" vid="169"></div>
+                    <span class="font-semibold font-serif text-base" vid="170">Lexia Copilot</span>
+                </div>
+                <button class="btn btn-ghost btn-icon" vid="171"><svg class="icon" viewBox="0 0 24 24" vid="172"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" vid="173"></path></svg></button>
+            </div>
+            
+            <div class="chat-container" vid="174">
+                <div class="message system" vid="175">
+                    <div class="message-bubble" vid="176">
+                        I'm analyzing the Vance Deposition (Draft) attached to this case. What specific contradictions are you looking for regarding the Oct 2022 appraisal?
+                    </div>
+                </div>
+                
+                <div class="message user" vid="177">
+                    <div class="message-bubble" vid="178">
+                        Find any mentions where Vance discusses the zoning regulations of the North block property. Compare it to his statements in the 2018 appraisal.
+                    </div>
+                </div>
+
+                <div class="message system" vid="179">
+                    <div style="display: flex; gap: 4px; padding: 8px 12px; margin-bottom: 4px;" vid="180">
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); animation: pulse 1.5s infinite;" vid="181"></span>
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); animation: pulse 1.5s infinite 0.2s;" vid="182"></span>
+                        <span style="width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); animation: pulse 1.5s infinite 0.4s;" vid="183"></span>
+                    </div>
+                </div>
+                
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto;" vid="184">
+                    <button class="btn btn-outline text-xs" vid="185">Draft response</button>
+                    <button class="btn btn-outline text-xs" vid="186">Find similar precedents</button>
+                    <button class="btn btn-outline text-xs" vid="187">Summarize deposition</button>
+                </div>
+            </div>
+
+            <div class="chat-input-area" vid="188">
+                <div class="chat-input-wrapper" vid="189">
+                    <textarea class="chat-textarea" placeholder="Ask Lexia regarding this case..." rows="1" vid="190"></textarea>
+                    <button class="btn btn-icon" style="background: var(--text-primary); color: white; margin-bottom: 2px;" vid="191">
+                        <svg class="icon" viewBox="0 0 24 24" vid="192"><line x1="22" y1="2" x2="11" y2="13" vid="193"></line><polygon points="22 2 15 22 11 13 2 9 22 2" vid="194"></polygon></svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+
+</body></html>
